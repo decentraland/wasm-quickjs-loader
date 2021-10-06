@@ -7,4 +7,5 @@ Also you'll need to install CMake.
 ## Build
 Run `make build`
 
-## Tests
+## TODO: Tests 
+There isn't any test for now
