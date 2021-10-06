@@ -43,10 +43,15 @@ clean:
 	rm -rf cmake-build
 
 cmake:
-	mkdir -p cmake-build
+	rm -rf cmake-build && mkdir -p cmake-build
 	cd cmake-build && cmake .. -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_TOOLCHAIN_FILE=./wasimake.cmake 
 	
-build:
-	make cmake
+compile:
 	cd cmake-build && make
 	mkdir -p dist && cp cmake-build/wasm-quickjs-loader dist/loader.wasm
+
+build:
+	make cmake && make compile
+
+test:
+	@echo "Implement tests!"

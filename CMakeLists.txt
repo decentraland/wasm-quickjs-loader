@@ -29,11 +29,14 @@ add_library(quickjs
 
 project(wasm-quickjs-loader CXX)
 
+file(GLOB SOURCE_FILES
+    src/*.cpp
+    src/io/*.cpp
+    src/protomsg/*.pb.c
+)
+
 add_executable(wasm-quickjs-loader
-    src/game.cpp
-    src/quickjs_example.cpp
-    src/scene/Scene.cpp
-    src/nanopb_test.cpp
+    ${SOURCE_FILES}
     ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
