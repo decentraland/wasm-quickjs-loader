@@ -1,8 +1,11 @@
 {
-  "name": "wasm-quickjs-loader",
-  "version": "0.1.0",
+  "name": "@dcl/wasm-quickjs-loader",
+  "version": "0.0.0",
   "description": "",
   "scripts": {
     "test": "echo test"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
