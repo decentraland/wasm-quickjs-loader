@@ -1,5 +1,5 @@
 {
-  "name": "wasm-quickjs-loader",
+  "name": "@dcl/wasm-quickjs-loader",
   "version": "0.0.0",
   "description": "",
   "scripts": {
