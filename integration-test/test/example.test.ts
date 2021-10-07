@@ -12,15 +12,15 @@ async function loadStartAndUpdateOnce(filePath: string) {
 
   await result.start();
 
-  result.metaverseWrapper.Renderer0FDChannel.writeMessage(
-    new TextEncoder().encode("hello loader")
-  );
+  // result.metaverseWrapper.Renderer0FDChannel.writeMessage(
+  //   new TextEncoder().encode("hello loader")
+  // );
 
-  result.metaverseWrapper.Renderer0FDChannel.setDataArriveCallback((data) => {
-    console.log(
-      `RendererDataArrival => "${Buffer.from(data).toString("utf-8")}"`
-    );
-  });
+  // result.metaverseWrapper.Renderer0FDChannel.setDataArriveCallback((data) => {
+  //   console.log(
+  //     `RendererDataArrival => "${Buffer.from(data).toString("utf-8")}"`
+  //   );
+  // });
 
   for (let i = 0; i < 5; i++) {
     await result.update(1 / 30);

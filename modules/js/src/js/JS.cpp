@@ -8,68 +8,34 @@
 #include "JS.h"
 #include "DecentralandInterface.h"
 
-JSRuntime *runtime;
-JSContext *ctx;
-
-std::vector<JSValue *> onEventFunctions;
-
-static JSValue log(JSContext *ctx, JSValueConst this_val,
-                   int argc, JSValueConst *argv)
+class JS::JSPimpl
 {
-    int i;
-    const char *str;
-    size_t len;
+public:
+    IIOModule *ioModule;
 
-    for (i = 0; i < argc; i++)
-    {
-        if (i != 0)
-            putchar(' ');
-        str = JS_ToCStringLen(ctx, &len, argv[i]);
-        if (!str)
-            return JS_EXCEPTION;
-        fwrite(str, 1, len, stdout);
-        JS_FreeCString(ctx, str);
-    }
-    putchar('\n');
-    return JS_UNDEFINED;
+    JSRuntime *runtime;
+    JSContext *ctx;
+
+    std::unique_ptr<DecentralandInterface> dcl;
+};
+
+JS::~JS()
+{
+    JS_FreeContext(pimpl->ctx);
+    JS_FreeRuntime(pimpl->runtime);
 }
 
-static JSValue onUpdate(JSContext *ctx, JSValueConst this_val,
-                        int argc, JSValueConst *argv)
+JS::JS(IIOModule *value) : pimpl(new JSPimpl)
 {
-    if (argc == 1)
-    {
-        auto funct = argv[0];
-        if (JS_IsFunction(ctx, funct))
-        {
-            JSValue copy = JS_DupValue(ctx, funct);
-            onEventFunctions.push_back(&copy);
-            return JS_UNDEFINED;
-        }
-    }
+    pimpl->ioModule = value;
 
-    // Unhappy case
-    return JS_UNDEFINED;
-}
+    pimpl->ioModule->getRendererChannel()->setOnDataArrival([&](const void *data, int dataLength)
+                                                            { pimpl->ioModule->getRendererChannel()->writeMessage("hello kernel", 12); });
 
-JS::JS(IIOModule *value)
-{
-    ioModule = value;
+    pimpl->runtime = JS_NewRuntime();
+    pimpl->ctx = JS_NewContext(pimpl->runtime);
 
-    ioModule->getRendererChannel()->setOnDataArrival([&](const void *data, int dataLength)
-                                                     { ioModule->getRendererChannel()->writeMessage("hello kernel", 12); });
-
-    runtime = JS_NewRuntime();
-    ctx = JS_NewContext(runtime);
-
-    // Creating global object context
-    JSValue global_obj = JS_GetGlobalObject(ctx);
-    JSValue dcl = JS_NewObject(ctx);
-    JS_SetPropertyStr(ctx, dcl, "DEBUG", JS_NewBool(ctx, 0));
-    JS_SetPropertyStr(ctx, dcl, "log", JS_NewCFunction(ctx, log, "log", 1));
-    JS_SetPropertyStr(ctx, dcl, "onUpdate", JS_NewCFunction(ctx, onUpdate, "onUpdate", 1));
-
-    JS_SetPropertyStr(ctx, global_obj, "dcl", dcl);
+    pimpl->dcl = std::make_unique<DecentralandInterface>(pimpl->ctx, value->getRendererChannel());
 
     // Testing JS
     std::string code = R"(
@@ -83,26 +49,52 @@ JS::JS(IIOModule *value)
             dcl.log(`onUpdate called from quickjs ${dt}`)
         })
 
-        dcl.onUpdate('asd')
+    
+        dcl.callRpc().then(() => {
+            dcl.log('promise resolve')
+        }).catch(() => {
+            dcl.log('promise reject'    )
+        })
     )";
 
-    JS_Eval(ctx, code.c_str(), code.length(), "index.js", 0);
+    JSValue eval = JS_Eval(pimpl->ctx, code.c_str(), code.length(), "index.js", 0);
+    if (JS_IsException(eval)){
+        JSValue exception_val = JS_GetException(pimpl->ctx);
+        const char* str = JS_ToCString(pimpl->ctx, exception_val);
+        printf("Exception on eval -> %s ", str);
+        JS_FreeCString(pimpl->ctx, str);
 
-    DecentralandInterface dclInterface(ctx);
-    
+        JSValue val = JS_GetPropertyStr(pimpl->ctx, exception_val, "stack");
+        if (!JS_IsUndefined(val)) {
+            const char* str2 = JS_ToCString(pimpl->ctx, val);
+            printf("stack on eval -> %s ", str2);
+            JS_FreeCString(pimpl->ctx, str2);
+        }
+    }else{
+        const char* str = JS_ToCString(pimpl->ctx, eval);
+        printf("Eval result -> %s ", str);
+    }
 }
 
 void JS::loop(double dt)
 {
-    JSValue jsDtValue = JS_NewFloat64(ctx, 0.033);
 
-    for (const JSValue *cb : onEventFunctions)
-    {
-        if (JS_IsFunction(ctx, *cb))
-        {
-            JS_Call(ctx, *cb, JS_UNDEFINED, 1, (JSValueConst *)&jsDtValue);
-        }
-    }
+    // JSContext *ctx1;
+    // int err;
 
-    JS_FreeValue(ctx, jsDtValue);
+    // /* execute the pending jobs */
+    // for (;;)
+    // {
+    //     err = JS_ExecutePendingJob(pimpl->runtime, &ctx1);
+    //     if (err <= 0)
+    //     {
+    //         if (err < 0)
+    //         {
+    //             // js_std_dump_error(ctx1);
+    //         }
+    //         break;
+    //     }
+    // }
+
+    pimpl->dcl->emitUpdate(dt);
 }

@@ -1,0 +1,9 @@
+[
+    {
+      "name": "Compile standalone test",
+      "kind": "Webpack",
+      "file": "./standalone/entrypoint.ts",
+      "target": "web"
+    }
+  ]
+  

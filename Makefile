@@ -49,7 +49,7 @@ cmake:
 	
 compile:
 	cd cmake-build && make
-	mkdir -p dist && cp cmake-build/wasm-quickjs-loader dist/loader.wasm
+	mkdir -p dist && cp cmake-build/wasm-quickjs-loader dist/loader.wasm && cp cmake-build/wasm-quickjs-loader dist/loader.bin
 
 build:
 	make cmake && make compile
