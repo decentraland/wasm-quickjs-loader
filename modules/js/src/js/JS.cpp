@@ -1,8 +1,12 @@
+
 #include <string>
-#include "JS.h"
-#include "io/IIOModule.h"
-#include "quickjs/quickjs.h"
 #include <vector>
+
+#include "quickjs/quickjs.h"
+
+#include "io/IIOModule.h"
+#include "JS.h"
+#include "DecentralandInterface.h"
 
 JSRuntime *runtime;
 JSContext *ctx;
@@ -83,6 +87,9 @@ JS::JS(IIOModule *value)
     )";
 
     JS_Eval(ctx, code.c_str(), code.length(), "index.js", 0);
+
+    DecentralandInterface dclInterface(ctx);
+    
 }
 
 void JS::loop(double dt)
