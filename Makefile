@@ -3,6 +3,7 @@ WASI_VERSION=12
 WASI_VERSION_FULL=$(WASI_VERSION).0
 WASI_SDK_PATH=$(shell pwd)/wasi-sdk-$(WASI_VERSION_FULL)
 OS := $(shell uname)
+CMAKE_TOOLCHAIN_FILE=$(shell pwd)/wasimake.cmake
 
 install:
 ifeq ($(OS),Darwin)
@@ -44,7 +45,7 @@ clean:
 
 cmake:
 	rm -rf cmake-build && mkdir -p cmake-build
-	cd cmake-build && cmake .. -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_TOOLCHAIN_FILE=./wasimake.cmake 
+	cd cmake-build && cmake .. -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE)
 	
 compile:
 	cd cmake-build && make

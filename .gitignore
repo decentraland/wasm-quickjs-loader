@@ -2,3 +2,4 @@
 wasi-sdk-*
 cmake-build
 dist
+node_modules

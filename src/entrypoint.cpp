@@ -9,8 +9,10 @@
 #include <memory>
 #include <string>
 #include "io/ChannelIOModule.h"
+#include "js/JS.h"
 
 std::unique_ptr<ChannelIOModule> ioModule;
+std::unique_ptr<JS> js;
 
 std::vector<std::string> get_params_by_lines(int fileDescriptor)
 {
@@ -85,12 +87,7 @@ int _init(int paramsFd)
                                                scene0FdWrite, scene0FdRead,
                                                scene0DebuggerFdWrite, scene0DebuggerFdRead);
 
-  ioModule->getRendererChannel()->setOnDataArrival([](const void *data, int dataLength)
-    { 
-      ioModule->getRendererChannel()->writeMessage("hello kernel", 12); 
-      });
-
-  // quickJsLoader->init(moduleIO);
+  js = std::make_unique<JS>(ioModule.get());
 
   printf("[CppWasm] Init scene called with %d params.\n", lines.size());
   return 0;
@@ -99,7 +96,7 @@ int _init(int paramsFd)
 int _update(float dt)
 {
   ioModule->poll();
-  // quickJsLoader->frame(dt);
+  js->loop(dt);
 
   return 0;
 }

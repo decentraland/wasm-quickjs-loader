@@ -1,0 +1,20 @@
+{
+  "name": "integration-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/ts-node ./test/example.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.3",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5",
+    "@dcl/wasm-runtime": "next"
+  }
+}
