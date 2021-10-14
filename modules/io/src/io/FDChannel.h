@@ -9,7 +9,7 @@ public:
     FDChannel(int fdRead, int fdWrite);
     ~FDChannel() override;
 
-    int writeMessage(char *buffer, uint32_t bufferLength) override;
+    int writeMessage(const char *buffer, uint32_t bufferLength) override;
     void setOnDataArrival(DataArrivalCallback f) override;
 
     void poll();

@@ -8,11 +8,10 @@
 #include <string.h>
 #include <memory>
 #include <string>
-#include "io/ChannelIOModule.h"
-#include "js/JS.h"
+#include <vector>
 
-std::unique_ptr<ChannelIOModule> ioModule;
-std::unique_ptr<JS> js;
+extern void setup(const std::vector<std::string> &params);
+extern void loop(float dt);
 
 std::vector<std::string> get_params_by_lines(int fileDescriptor)
 {
@@ -40,64 +39,14 @@ std::vector<std::string> get_params_by_lines(int fileDescriptor)
 int _init(int paramsFd)
 {
   std::vector<std::string> lines = get_params_by_lines(paramsFd);
-
-  int rendererFdWrite = -1, rendererFdRead = -1,
-      scene0FdWrite = -1, scene0FdRead = -1,
-      scene0DebuggerFdWrite = -1, scene0DebuggerFdRead = -1;
-
-  for (int i = 0; i < lines.size(); i++)
-  {
-    if (lines[i] == "--set_fd" && (i + 2) < lines.size())
-    {
-      const std::string &key = lines[i + 1];
-      int number = atoi(lines[i + 2].c_str());
-      if (!key.empty() && number > 0)
-      {
-
-        if (key == "FD_RENDERER_READ")
-        {
-          rendererFdRead = number;
-        }
-        else if (key == "FD_RENDERER_WRITE")
-        {
-          rendererFdWrite = number;
-        }
-        else if (key == "FD_SCENES0_READ")
-        {
-          scene0FdRead = number;
-        }
-        else if (key == "FD_SCENES0_WRITE")
-        {
-          scene0FdWrite = number;
-        }
-        else if (key == "FD_SCENES0DEBUGGER_READ")
-        {
-          scene0DebuggerFdRead = number;
-        }
-        else if (key == "FD_SCENES0DEBUGGER_WRITE")
-        {
-          scene0DebuggerFdWrite = number;
-        }
-      }
-      i += 2;
-    }
-  }
-
-  ioModule = std::make_unique<ChannelIOModule>(rendererFdWrite, rendererFdRead,
-                                               scene0FdWrite, scene0FdRead,
-                                               scene0DebuggerFdWrite, scene0DebuggerFdRead);
-
-  js = std::make_unique<JS>(ioModule.get());
-
-  printf("[CppWasm] Init scene called with %d params.\n", lines.size());
+  printf("cpp_wasm init with %d params.\n", static_cast<int>(lines.size()));
+  setup(lines);
   return 0;
 }
 
 int _update(float dt)
 {
-  ioModule->poll();
-  js->loop(dt);
-
+  loop(dt);
   return 0;
 }
 

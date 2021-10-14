@@ -4,26 +4,28 @@
 
 #include "IIOModule.h"
 #include <vector>
+#include <map>
+#include <string>
+
+class FDChannel;
+
+struct ChannelParam
+{
+    int fdWrite = -1, fdRead = -1;
+};
 
 class ChannelIOModule : public IIOModule
 {
 public:
-    ChannelIOModule(int rendererFdWrite = -1, int rendererFdRead = -1,
-                    int scene0FdWrite = -1, int scene0FdRead = -1,
-                    int scene0DebuggerFdWrite = -1, int scene0DebuggerFdRead = -1);
+    ChannelIOModule(std::map<std::string, ChannelParam> channels);
     ~ChannelIOModule();
 
-    IChannel *getRendererChannel() const;
-    IChannel *getScene0Channel() const;
-    IChannel *getScene0DebuggerChannel() const;
+    IChannel *getChannelByKey(const std::string key) const;
 
     void poll();
 
 private:
-    std::vector<IChannel *> channels;
-    std::unique_ptr<IChannel> rendererChannel;
-    std::unique_ptr<IChannel> scene0Channel;
-    std::unique_ptr<IChannel> scene0DebuggerChannel;
+    std::map<std::string, std::unique_ptr<FDChannel>> channels;
 };
 
 #endif

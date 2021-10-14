@@ -1,18 +1,13 @@
 #include "ChannelIOModule.h"
 #include "FDChannel.h"
+#include <memory>
 
-ChannelIOModule::ChannelIOModule(int rendererFdWrite, int rendererFdRead,
-                                 int scene0FdWrite, int scene0FdRead,
-                                 int scene0DebuggerFdWrite, int scene0DebuggerFdRead)
-
+ChannelIOModule::ChannelIOModule(std::map<std::string, ChannelParam> fdChannels)
 {
-    scene0Channel = std::make_unique<FDChannel>(scene0FdRead, scene0FdWrite);
-    scene0DebuggerChannel = std::make_unique<FDChannel>(scene0DebuggerFdRead, scene0DebuggerFdWrite);
-    rendererChannel = std::make_unique<FDChannel>(rendererFdRead, rendererFdWrite);
-
-    channels.push_back(scene0Channel.get());
-    channels.push_back(scene0DebuggerChannel.get());
-    channels.push_back(rendererChannel.get());
+    for (const auto &entry : fdChannels)
+    {
+        this->channels[entry.first] = std::make_unique<FDChannel>(entry.second.fdRead, entry.second.fdWrite);
+    }
 }
 
 ChannelIOModule::~ChannelIOModule()
@@ -21,27 +16,21 @@ ChannelIOModule::~ChannelIOModule()
 
 void ChannelIOModule::poll()
 {
-    for (IChannel *channel : channels)
+    for (const auto &entry : channels)
     {
-        FDChannel *fdChannel = dynamic_cast<FDChannel *>(channel);
-        if (fdChannel != nullptr)
-        {
-            fdChannel->poll();
-        }
+        entry.second->poll();
     }
 }
 
-IChannel *ChannelIOModule::getRendererChannel() const
+IChannel *ChannelIOModule::getChannelByKey(std::string key) const
 {
-    return rendererChannel.get();
-}
-
-IChannel *ChannelIOModule::getScene0Channel() const
-{
-    return scene0Channel.get();
-}
-
-IChannel *ChannelIOModule::getScene0DebuggerChannel() const
-{
-    return scene0DebuggerChannel.get();
+    auto it = channels.find(key);
+    if (it != channels.end())
+    {
+        return it->second.get();
+    }
+    else
+    {
+        return nullptr;
+    }
 }

@@ -16,7 +16,7 @@ FDChannel::~FDChannel()
 {
 }
 
-int FDChannel::writeMessage(char *buffer, uint32_t bufferLength)
+int FDChannel::writeMessage(const char *buffer, uint32_t bufferLength)
 {
     lseek(this->fdWrite, 0, SEEK_SET);
     ::write(this->fdWrite, buffer, bufferLength);
@@ -32,6 +32,7 @@ void FDChannel::poll()
 {
     int ret;
     uint32_t bufferLength;
+    uint32_t fileLength = lseek(this->fdRead, 0, SEEK_END);
 
     lseek(this->fdRead, 0, SEEK_SET);
     do
@@ -41,6 +42,12 @@ void FDChannel::poll()
             ret = read(this->fdRead, &bufferLength, 4);
             if (ret > 0)
             {
+                if (bufferLength > fileLength)
+                {
+                    assert(0);
+                    break;
+                }
+
                 this->pollingState.state = ReadingData;
                 this->pollingState.dataOffset = 0;
                 this->pollingState.dataLength = bufferLength;

@@ -1,5 +1,5 @@
 *.wasm
 wasi-sdk-*
-cmake-build
+build
 dist
 node_modules
