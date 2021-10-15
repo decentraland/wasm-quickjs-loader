@@ -31,7 +31,7 @@ clean:
 
 cmake:
 	rm -rf build && mkdir -p build
-	cd build && cmake .. -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE)
+	cd build && cmake ..
 	
 compile:
 	cd build && make

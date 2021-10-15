@@ -148,7 +148,7 @@ DecentralandInterface::Promise *DecentralandInterface::createPromise()
 void DecentralandInterface::sendToRuntime(std::string methodName, JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, uint64_t promiseId)
 {
     std::stringstream ss;
-    ss << "{\"method\":\"" << methodName << "\",params:[";
+    ss << "{\"method\":\"" << methodName << "\",\"params\":[";
     for (int i = 0; i < argc; i++)
     {
         JSValue json = JS_JSONStringify(ctx, argv[i], JS_NULL, JS_UNDEFINED);
