@@ -17,7 +17,7 @@ add_library(quickjs
     src/quickjs/libregexp.c
     src/quickjs/libunicode.c
     src/quickjs/quickjs-debugger.c
-    src/quickjs/quickjs-debugger-transport-wasi.c
+#    src/quickjs/quickjs-debugger-transport-wasi.c
     src/quickjs/quickjs.c
 )
 

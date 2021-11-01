@@ -16344,7 +16344,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
     for(;;) {
         int call_argc;
         JSValue *call_argv;
-
+        
         js_debugger_check(ctx, NULL);
 
         SWITCH(pc) {

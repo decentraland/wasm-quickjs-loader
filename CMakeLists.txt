@@ -39,8 +39,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(CMAKE_C_COMPILER_WORKS ON)
 set(CMAKE_CXX_COMPILER_WORKS ON)
 
-set(CMAKE_C_FLAGS "-O3 -fno-exceptions" CACHE STRING "wasi-sdk build")
-set(CMAKE_CXX_FLAGS "-O3 -std=c++17 -fno-exceptions" CACHE STRING "wasi-sdk build")
+set(CMAKE_C_FLAGS "-g -fno-exceptions" CACHE STRING "wasi-sdk build")
+set(CMAKE_CXX_FLAGS "-g -std=c++17 -fno-exceptions" CACHE STRING "wasi-sdk build")
 set(CMAKE_EXE_LINKER_FLAGS "-fno-exceptions -nostartfiles -Wl,--no-entry -Wl,--import-memory -Wl,--export-dynamic")
 
 ######################
@@ -58,7 +58,7 @@ add_subdirectory(modules/utils)
 
 add_executable(wasm-quickjs-loader
     src/entrypoint.cpp
-    src/main.cpp
+    src/Scene.cpp
 )
 
 target_link_libraries(wasm-quickjs-loader PUBLIC io JS utils)

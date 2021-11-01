@@ -1,4 +1,9 @@
 {
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-  "cmake.configureOnOpen": true
+  "cmake.configureOnOpen": true,
+  "files.associations": {
+    "sstream": "c",
+    "queue": "cpp",
+    "functional": "cpp"
+  }
 }

@@ -4,6 +4,7 @@ project(JS)
 
 add_library(JS
   src/js/JS.cpp
+  src/js/JSDebugger.cpp
   src/js/DecentralandInterface.cpp
 )
 

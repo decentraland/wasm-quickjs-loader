@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+          {
+                  "name": "Attach QuickJS (connect)",
+                  "type": "dcl-quickjs",
+                  "request": "launch",
+                  "program": "${workspaceFolder}/bin/game.js",
+                  "localRoot": "${workspaceFolder}/",
+                  "attach": true,
+                  "port": 7666,
+                  "trace": true
+          }
+  ],
+  "compounds": [
+          {
+                  "name": "Extension + Server",
+                  "configurations": [ "Extension", "Server" ]
+          }
+  ]
+}

@@ -10,8 +10,9 @@
 #include <string>
 #include <vector>
 
-extern void setup(const std::vector<std::string> &params);
-extern void loop(float dt);
+#include "Scene.h"
+
+Scene *mainScene = nullptr;
 
 std::vector<std::string> get_params_by_lines(int fileDescriptor)
 {
@@ -40,13 +41,25 @@ int _init(int paramsFd)
 {
   std::vector<std::string> lines = get_params_by_lines(paramsFd);
   printf("cpp_wasm init with %d params.\n", static_cast<int>(lines.size()));
-  setup(lines);
-  return 0;
+
+  mainScene = new Scene();
+  mainScene->setup(lines);
+  return reinterpret_cast<int>(mainScene);
 }
 
 int _update(float dt)
 {
-  loop(dt);
+  mainScene->loop(dt);
+  return 0;
+}
+
+int _update(int ptr, float dt)
+{
+  Scene *scene = reinterpret_cast<Scene *>(ptr);
+  if (scene)
+  {
+    scene->loop(dt);
+  }
   return 0;
 }
 
@@ -66,6 +79,11 @@ extern "C"
   export int update(float dt)
   {
     return _update(dt);
+  }
+
+  export int updateScene(int ptr, float dt)
+  {
+    return _update(ptr, dt);
   }
 
   export int main(int argn, char *argv[])

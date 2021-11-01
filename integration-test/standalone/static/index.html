@@ -7,10 +7,25 @@
     <title>Document</title>
 </head>
 <body>
+
+    <h1 id="moduleLoaded">0</h1>
+    <br>
+    <button onclick="spawnWasm()">Spawn Wasm</button>
+    <br>
+    <button onclick="spawn100Wasm()">Spawn 100 Wasm</button>
     <script src="entrypoint.js"></script>
     <script>
-        globalThis.start();
-
+        let N = 0;
+        function spawnWasm(){
+            N++
+            document.getElementById("moduleLoaded").innerHTML = N
+            globalThis.start();
+        }
+        function spawn100Wasm() {
+            for (var i = 0; i<100; i++){
+                setTimeout(spawnWasm,i*10)
+            }
+        }
     </script>
 </body>
 </html>

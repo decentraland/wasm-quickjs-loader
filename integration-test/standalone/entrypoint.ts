@@ -6,6 +6,12 @@ import { IChannel } from "@dcl/wasm-runtime/dist/io/IChannel";
 
 const loaderWasmStr = require("!!binary-loader!./../../dist/loader.bin");
 
+// const bigMemory = new WebAssembly.Memory({
+//   initial: 10000,
+//   maximum: 10000
+// });
+// console.log(bigMemory);
+
 export async function startModule() {
   // if necessary, convert the imported string to Uint8Array:
   let wasmBytes = new Uint8Array(loaderWasmStr.length);
@@ -13,7 +19,8 @@ export async function startModule() {
     wasmBytes[i] = loaderWasmStr.charCodeAt(i);
   }
 
-  const gameJsSrc = await (await fetch("game.js")).text();
+  const gameJsSrc = await (await fetch("index.js")).text();
+  // const result = await run({ wasmBytes , customMemory: bigMemory });
   const result = await run({ wasmBytes });
 
   result.metaverseWrapper.wasmFs.fs.writeFileSync("/game.js", gameJsSrc);
@@ -35,7 +42,7 @@ globalThis.start = () => {
       console.log(`WASM->Kernel: '${Buffer.from(data).toString("utf-8")}`);
     });
 
-    await result.start();
+    const scenePtr = await result.start();
 
     async function update() {
       rendererChannel.writeMessage(new TextEncoder().encode("hello scene!"));
@@ -49,8 +56,12 @@ globalThis.start = () => {
         );
       }
 
-      result.update(0.5);
-      setTimeout(update, 500);
+      try{
+        result.updateScene(scenePtr, 1.0);
+        setTimeout(update, 1000);
+      }catch(err){
+        console.error(err)
+      }
     }
 
     setTimeout(update, 1000);
