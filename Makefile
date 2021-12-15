@@ -35,7 +35,7 @@ cmake:
 	
 compile:
 	cd build && make
-	mkdir -p dist && cp build/wasm-quickjs-loader dist/loader.wasm && cp build/wasm-quickjs-loader dist/loader.bin
+	mkdir -p dist && cp build/wasm-quickjs-loader dist/loader.wasm && cp build/wasm-quickjs-loader dist/loader.bin && cp build/wasm-quickjs-loader dist/loader.wasm.br
 
 build:
 	make cmake && make compile

@@ -53,6 +53,18 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
 
+      - name: deploy preview
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
+          CDN_BUCKET: ${{ secrets.SDK_TEAM_S3_BUCKET }}
+        run: |
+          npx @dcl/cdn-uploader@next \
+            --bucket $CDN_BUCKET \
+            --local-folder dist \
+            --bucket-folder "@dcl/wasm-quickjs-loader/branch/${{ github.head_ref || github.ref }}"
+
   notify_deployment:
     needs: [build]
     if: ${{ github.event.pull_request.number }}

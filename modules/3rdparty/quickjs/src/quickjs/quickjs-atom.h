@@ -169,6 +169,7 @@ DEF(groups, "groups")
 DEF(status, "status")
 DEF(reason, "reason")
 DEF(globalThis, "globalThis")
+DEF(self, "self")
 #ifdef CONFIG_BIGNUM
 DEF(bigint, "bigint")
 DEF(bigfloat, "bigfloat")

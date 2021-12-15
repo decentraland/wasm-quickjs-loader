@@ -65,13 +65,14 @@ void Scene::loop(float dt)
     js->loop(dt);
   else
   {
-    if (js_transport_peek(nullptr) > 50){
+    printf("Starting game.js \n");
+    // if (js_transport_peek(nullptr) > 50){
       auto gameJsSize = lseek(scene0GamejsFd, 0, SEEK_END);
       char *gameJsBuf = (char *)malloc(gameJsSize);
       lseek(scene0GamejsFd, 0, SEEK_SET);
       read(scene0GamejsFd, gameJsBuf, gameJsSize);
       js->eval(gameJsBuf, gameJsSize);
       startedJs = true;
-    }
+    // }
   }
 }
