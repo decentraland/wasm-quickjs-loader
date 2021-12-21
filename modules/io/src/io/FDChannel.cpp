@@ -10,10 +10,14 @@ FDChannel::FDChannel(int fdRead, int fdWrite)
     this->pollingState.state = WatingDataLength;
     this->fdRead = fdRead;
     this->fdWrite = fdWrite;
+
+    pollingState.dataLength = 8192;
+    this->pollingState.data = (char *)malloc(pollingState.dataLength);            
 }
 
 FDChannel::~FDChannel()
 {
+    free(this->pollingState.data);
 }
 
 int FDChannel::writeMessage(const char *buffer, uint32_t bufferLength)

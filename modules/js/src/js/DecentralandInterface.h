@@ -12,7 +12,9 @@ public:
     DecentralandInterface(JSContext *ctx, IChannel *kernelChannel);
 
     void emitUpdate(float dt);
-
+    bool logIfError(JSValue value);
+    void log(const char *value);
+    
 private:
     JSContext *ctx;
     IChannel *kernelChannel;
@@ -29,9 +31,12 @@ private:
 
     std::vector<std::unique_ptr<Promise>> promises;
     std::vector<JSValue> onUpdateFunction;
+    std::vector<JSValue> onEventFunction;
+    std::vector<JSValue> onStartFunction;
 
     Promise* createPromise();
     void sendToRuntime(std::string methodName, JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, uint64_t promiseId = 0);
+
 
     // Functions definitions
     static JSValue onUpdate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);

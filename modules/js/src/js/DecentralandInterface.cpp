@@ -44,6 +44,79 @@ DecentralandInterface::DecentralandInterface(JSContext *context, IChannel *kerne
     JS_SetPropertyStr(ctx, dcl, "unsubscribe", JS_NewCFunction(ctx, &DecentralandInterface::unsubscribe, "unsubscribe", 1));
 
     JS_SetPropertyStr(ctx, global_obj, "dcl", dcl);
+
+    kernelChannel->setOnDataArrival([&](const void *data, int dataLength)
+                                            { 
+
+        auto json = JS_ParseJSON(ctx, static_cast<const char*>(data), dataLength, "<input>");
+        if (JS_IsException(json)){
+            JS_FreeValue(ctx, json);
+            log("Couldn't process received data from kernel");
+            log((const char*)data);
+            return;
+        }
+
+        if (JS_IsObject(json)){
+            JSValue promiseIdValue = JS_GetPropertyStr(ctx, json, "promiseId");
+            if (JS_IsUndefined(promiseIdValue)){
+                JS_FreeValue(ctx, promiseIdValue);
+                JSValue eventValue = JS_GetPropertyStr(ctx, json, "event");
+
+                if (!JS_IsUndefined(eventValue)){
+                    for (const JSValue cb : onEventFunction)
+                    {
+                        if (JS_IsFunction(ctx, cb))
+                        {
+                            JSValue ret = JS_Call(ctx, cb, JS_UNDEFINED, 1, (JSValueConst *)&eventValue);
+                            logIfError(ret);
+                        }
+                    }
+                    
+                }
+
+                JS_FreeValue(ctx, json);
+                JS_FreeValue(ctx, eventValue);
+                return;
+            }else{
+                JSValue dataValue = JS_GetPropertyStr(ctx, json, "data");
+                JSValue resolvedValue = JS_GetPropertyStr(ctx, json, "resolved");
+                int promiseId;
+
+                if (JS_ToInt32(ctx, &promiseId, promiseIdValue)){
+                    goto finish;
+                }
+
+                if (JS_IsUndefined(dataValue)){ 
+                    goto finish;
+                }
+                
+                if (JS_IsUndefined(resolvedValue)){ 
+                    goto finish;
+                }
+
+                for (auto &promise : promises)
+                {
+                    if (promise){
+                        if (promise->id == promiseIdValue){
+                            int index = JS_ToBool(ctx, resolvedValue) ? 0 : 1;
+                            auto result = JS_Call(ctx, promise->resolving_functions[index], JS_NULL, 1, &dataValue);
+                            this->logIfError(result);
+                            promise.reset();
+                            break;
+                        }
+                    }
+                }
+
+                finish:
+                    JS_FreeValue(ctx, json);
+                    JS_FreeValue(ctx, promiseIdValue);
+                    JS_FreeValue(ctx, dataValue);
+                    JS_FreeValue(ctx, promiseIdValue);
+                    JS_FreeValue(ctx, resolvedValue);
+            }
+        }
+    });
+
 }
 
 JSValue DecentralandInterface::onUpdate(JSContext *ctx, JSValueConst this_val,
@@ -70,27 +143,33 @@ JSValue DecentralandInterface::onUpdate(JSContext *ctx, JSValueConst this_val,
 JSValue DecentralandInterface::log(JSContext *ctx, JSValueConst this_val,
                                    int argc, JSValueConst *argv)
 {
-    int i;
-    const char *str;
-    size_t len;
+    JSValue this_ptr = JS_GetPropertyStr(ctx, this_val, "__ptr");
+    DecentralandInterface *ptr = reinterpret_cast<DecentralandInterface *>(this_ptr);
 
-    for (i = 0; i < argc; i++)
-    {
-        if (i != 0)
-            putchar(' ');
-        str = JS_ToCStringLen(ctx, &len, argv[i]);
-        if (!str)
-            return JS_EXCEPTION;
-        fwrite(str, 1, len, stdout);
-        JS_FreeCString(ctx, str);
-    }
-    putchar('\n');
+    auto promise = ptr->createPromise();
+    ptr->sendToRuntime("log", ctx, this_val, argc, argv, promise->id);
 
-    str = JS_ToCStringLen(ctx, &len, JS_JSONStringify(ctx, this_val, JS_UNDEFINED, 2));
-    if (!str)
-        return JS_EXCEPTION;
-    fwrite(str, 1, len, stdout);
-    JS_FreeCString(ctx, str);
+    // int i;
+    // const char *str;
+    // size_t len;
+
+    // for (i = 0; i < argc; i++)
+    // {
+    //     if (i != 0)
+    //         putchar(' ');
+    //     str = JS_ToCStringLen(ctx, &len, argv[i]);
+    //     if (!str)
+    //         return JS_EXCEPTION;
+    //     fwrite(str, 1, len, stdout);
+    //     JS_FreeCString(ctx, str);
+    // }
+    // putchar('\n');
+
+    // str = JS_ToCStringLen(ctx, &len, JS_JSONStringify(ctx, this_val, JS_UNDEFINED, 2));
+    // if (!str)
+    //     return JS_EXCEPTION;
+    // fwrite(str, 1, len, stdout);
+    // JS_FreeCString(ctx, str);
 
     return JS_UNDEFINED;
 }
@@ -104,60 +183,71 @@ void DecentralandInterface::emitUpdate(float dt)
         if (JS_IsFunction(ctx, cb))
         {
             JSValue ret = JS_Call(ctx, cb, JS_UNDEFINED, 1, (JSValueConst *)&jsDtValue);
-            if (JS_IsException(ret))
-            {
-                JSValue exception_val = JS_GetException(ctx);
-                const char *str = JS_ToCString(ctx, exception_val);
-                printf("Exception on eval -> %s ", str);
-                JS_FreeCString(ctx, str);
-
-                JSValue val = JS_GetPropertyStr(ctx, exception_val, "stack");
-                if (!JS_IsUndefined(val))
-                {
-                    const char *str2 = JS_ToCString(ctx, val);
-                    printf("stack on eval -> %s ", str2);
-                    JS_FreeCString(ctx, str2);
-                }
-            }
+            logIfError(ret);
         }
     }
 
     JS_FreeValue(ctx, jsDtValue);
 
-    static double counter = 0.0;
-    counter += dt;
+    // static double counter = 0.0;
+    // counter += dt;
 
-    if (counter > 10.0)
-    {
-        for (const auto &promise : promises)
-        {
-            JS_Call(ctx, promise->resolving_functions[0], JS_UNDEFINED, 0, NULL);
-        }
-    }
+    // if (counter > 10.0)
+    // {
+    //     for (const auto &promise : promises)
+    //     {
+    //         JS_Call(ctx, promise->resolving_functions[0], JS_UNDEFINED, 0, NULL);
+    //     }
+    // }
 }
 
 DecentralandInterface::Promise *DecentralandInterface::createPromise()
 {
     std::unique_ptr<Promise> newPromise = std::make_unique<Promise>();
+    Promise* rawPtr = newPromise.get();
     JSValue promise = JS_NewPromiseCapability(ctx, newPromise->resolving_functions);
     newPromise->promise = promise;
     promises.push_back(std::move(newPromise));
-    return newPromise.get();
+    return rawPtr;
 }
 
 void DecentralandInterface::sendToRuntime(std::string methodName, JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, uint64_t promiseId)
 {
     std::stringstream ss;
+    bool needComma = false;
+
     ss << "{\"method\":\"" << methodName << "\",\"params\":[";
     for (int i = 0; i < argc; i++)
     {
-        JSValue json = JS_JSONStringify(ctx, argv[i], JS_NULL, JS_UNDEFINED);
-        const char *str = JS_ToCString(ctx, json);
-        ss << str;
-        if (i < argc - 1)
-        {
-            ss << ",";
+        JSValue json = JS_JSONStringify(ctx, argv[i], JS_UNDEFINED, JS_UNDEFINED);
+
+        if (JS_IsUndefined(json)){
+            if (needComma){
+                ss << ",\"undefined\"";
+            }else{
+                ss << "\"undefined\"";
+            }
+        }else{
+            const char *str = JS_ToCString(ctx, json);
+            std::string stringToAdd = std::string(str);
+            if (stringToAdd.length() == 0){
+                if (needComma){
+                    ss << ",\"undefined2\"";
+                }else{
+                    ss << "\"undefined2\"";
+                }
+            }else{
+                if (needComma){
+                    ss << "," << str;
+                }else{
+                    ss << str;
+                }
+            }
+            JS_FreeCString(ctx, str);
         }
+
+        needComma = true;
+        JS_FreeValue(ctx, json);
     }
     ss << "],\"promiseId\":" << promiseId << "}";
 
@@ -166,6 +256,39 @@ void DecentralandInterface::sendToRuntime(std::string methodName, JSContext *ctx
     kernelChannel->writeMessage(buf.c_str(), buf.length());
 }
 
+bool DecentralandInterface::logIfError(JSValue value)
+{
+    if (JS_IsException(value))
+    {
+        JSValue errorVal = JS_NewString(ctx, "logIfErrorCall");
+        JSValue exception_val = JS_GetException(ctx);
+        std::vector<JSValueConst> values;
+        values.push_back(errorVal);
+        values.push_back(exception_val);
+
+        JSValue val = JS_GetPropertyStr(ctx, exception_val, "stack");
+        if (!JS_IsUndefined(val))
+        {
+            values.push_back(val);
+        }
+
+        sendToRuntime("log", ctx, JS_NULL, values.size(), &values[0]);
+
+        JS_FreeValue(ctx, exception_val);
+        JS_FreeValue(ctx, val);
+        JS_FreeValue(ctx, errorVal);
+        return true;
+    }
+    return false;
+}
+    
+void DecentralandInterface::log(const char* value)
+{
+    JSValue str = JS_NewString(ctx, value);
+    sendToRuntime("log", ctx, JS_NULL, 1, &str);
+    JS_FreeValue(ctx, str);
+}
+    
 JSValue DecentralandInterface::callRpc(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
 {
     JSValue this_ptr = JS_GetPropertyStr(ctx, this_val, "__ptr");
@@ -188,13 +311,38 @@ JSValue DecentralandInterface::loadModule(JSContext *ctx, JSValueConst this_val,
 
 JSValue DecentralandInterface::onEvent(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
 {
-    // callKernelRPC("onEvent", ctx, this_val, argc, argv);
+    JSValue this_ptr = JS_GetPropertyStr(ctx, this_val, "__ptr");
+    DecentralandInterface *ptr = reinterpret_cast<DecentralandInterface *>(this_ptr);
+
+    if (argc == 1)
+    {
+        auto funct = argv[0];
+        if (JS_IsFunction(ctx, funct))
+        {
+            JSValue copy = JS_DupValue(ctx, funct);
+            ptr->onEventFunction.push_back(copy);
+            return JS_UNDEFINED;
+        }
+    }
+
     return JS_UNDEFINED;
 }
 
 JSValue DecentralandInterface::onStart(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
 {
-    // callKernelRPC("onStart", ctx, this_val, argc, argv);
+    JSValue this_ptr = JS_GetPropertyStr(ctx, this_val, "__ptr");
+    DecentralandInterface *ptr = reinterpret_cast<DecentralandInterface *>(this_ptr);
+
+    if (argc == 1)
+    {
+        auto funct = argv[0];
+        if (JS_IsFunction(ctx, funct))
+        {
+            JSValue copy = JS_DupValue(ctx, funct);
+            ptr->onStartFunction.push_back(copy);
+            return JS_UNDEFINED;
+        }
+    }
     return JS_UNDEFINED;
 }
 
