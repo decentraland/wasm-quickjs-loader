@@ -47,9 +47,13 @@ DecentralandInterface::DecentralandInterface(JSContext *context, IChannel *kerne
 
     kernelChannel->setOnDataArrival([&](const void *data, int dataLength)
                                             { 
+        char *str = new char[dataLength+1];
+        memcpy(str, data, dataLength);
+        str[dataLength] = 0;
+        auto json = JS_ParseJSON(ctx, str, dataLength, "<input>");
+        delete[] str;
 
-        auto json = JS_ParseJSON(ctx, static_cast<const char*>(data), dataLength, "<input>");
-        if (JS_IsException(json)){
+        if (logIfError(json)){
             JS_FreeValue(ctx, json);
             log("Couldn't process received data from kernel");
             log((const char*)data);
@@ -117,6 +121,7 @@ DecentralandInterface::DecentralandInterface(JSContext *context, IChannel *kerne
         }
     });
 
+    this->log("Testing hello world!");
 }
 
 JSValue DecentralandInterface::onUpdate(JSContext *ctx, JSValueConst this_val,

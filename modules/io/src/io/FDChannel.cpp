@@ -65,7 +65,8 @@ void FDChannel::poll()
         {
             uint32_t remaining = this->pollingState.dataLength - this->pollingState.dataOffset;
             ret = read(this->fdRead, &this->pollingState.data[pollingState.dataOffset], remaining);
-            if (ret > 0)
+            // the second condition shouldn't happen ever
+            if (ret > 0 || (ret == 0 && remaining == 0))
             {
                 remaining -= ret;
                 if (remaining == 0)
