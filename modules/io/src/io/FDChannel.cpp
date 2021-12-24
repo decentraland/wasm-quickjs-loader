@@ -71,11 +71,11 @@ void FDChannel::poll()
                 remaining -= ret;
                 if (remaining == 0)
                 {
-                    if (onDataArrival)
+                    this->pollingState.state = WatingDataLength;
+                    if (onDataArrival && pollingState.dataLength > 0)
                     {
                         onDataArrival(pollingState.data, pollingState.dataLength);
                     }
-                    this->pollingState.state = WatingDataLength;
                 }
                 else
                 {

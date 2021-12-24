@@ -45,13 +45,9 @@ DecentralandInterface::DecentralandInterface(JSContext *context, IChannel *kerne
 
     JS_SetPropertyStr(ctx, global_obj, "dcl", dcl);
 
-    kernelChannel->setOnDataArrival([&](const void *data, int dataLength)
-                                            { 
-        char *str = new char[dataLength+1];
-        memcpy(str, data, dataLength);
-        str[dataLength] = 0;
-        auto json = JS_ParseJSON(ctx, str, dataLength, "<input>");
-        delete[] str;
+    kernelChannel->setOnDataArrival([&](const void *data, int dataLength)                             { 
+        const char *str = static_cast<const char*>(data);
+        JSValue json = JS_ParseJSON(ctx, str, dataLength - 1, "<input>");
 
         if (logIfError(json)){
             JS_FreeValue(ctx, json);
@@ -153,29 +149,6 @@ JSValue DecentralandInterface::log(JSContext *ctx, JSValueConst this_val,
 
     auto promise = ptr->createPromise();
     ptr->sendToRuntime("log", ctx, this_val, argc, argv, promise->id);
-
-    // int i;
-    // const char *str;
-    // size_t len;
-
-    // for (i = 0; i < argc; i++)
-    // {
-    //     if (i != 0)
-    //         putchar(' ');
-    //     str = JS_ToCStringLen(ctx, &len, argv[i]);
-    //     if (!str)
-    //         return JS_EXCEPTION;
-    //     fwrite(str, 1, len, stdout);
-    //     JS_FreeCString(ctx, str);
-    // }
-    // putchar('\n');
-
-    // str = JS_ToCStringLen(ctx, &len, JS_JSONStringify(ctx, this_val, JS_UNDEFINED, 2));
-    // if (!str)
-    //     return JS_EXCEPTION;
-    // fwrite(str, 1, len, stdout);
-    // JS_FreeCString(ctx, str);
-
     return JS_UNDEFINED;
 }
 
@@ -193,17 +166,6 @@ void DecentralandInterface::emitUpdate(float dt)
     }
 
     JS_FreeValue(ctx, jsDtValue);
-
-    // static double counter = 0.0;
-    // counter += dt;
-
-    // if (counter > 10.0)
-    // {
-    //     for (const auto &promise : promises)
-    //     {
-    //         JS_Call(ctx, promise->resolving_functions[0], JS_UNDEFINED, 0, NULL);
-    //     }
-    // }
 }
 
 DecentralandInterface::Promise *DecentralandInterface::createPromise()
