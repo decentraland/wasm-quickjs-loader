@@ -1,47 +1,64 @@
 cmake_minimum_required(VERSION 3.4.0)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(WASI 1)
+set(WASI_SDK_PREFIX ${CMAKE_SOURCE_DIR}/wasi-sdk-12.0)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+######################
+## WASI SDK Toolchain Section
+######################
 
-project(quickjs C)
+set(WASI TRUE)
 
-add_definitions(-DEMSCRIPTEN)
-add_definitions(-DQUICKJS_WITH_DEBUGGER)
-add_definitions(-DCONFIG_BIGNUM)
-add_definitions(-DFE_DOWNWARD=0x400)
-add_definitions(-DFE_UPWARD=0x400)
-add_definitions(-DCONFIG_VERSION="2021-03-27")
-add_definitions(-D_WASI_EMULATED_SIGNAL)
-add_definitions(-DGOOGLE_PROTOBUF_NO_THREADLOCAL)
+set(WASI_CC ${WASI_SDK_PREFIX}/bin/clang)
+set(WASI_CXX ${WASI_SDK_PREFIX}/bin/clang++)
+set(WASI_LD ${WASI_SDK_PREFIX}/bin/wasm-ld)
+set(WASI_AR ${WASI_SDK_PREFIX}/bin/llvm-ar)
+set(WASI_RANLIB ${WASI_SDK_PREFIX}/bin/llvm-ranlib)
+set(WASI_NM ${WASI_SDK_PREFIX}/bin/llvm-nm)
 
-add_library(quickjs
-    src/3rdparty/quickjs/cutils.c
-    src/3rdparty/quickjs/libbf.c
-    src/3rdparty/quickjs/libregexp.c
-    src/3rdparty/quickjs/libunicode.c
-    src/3rdparty/quickjs/quickjs-debugger.c
-    src/3rdparty/quickjs/quickjs-debugger-transport-wasi.c
-    src/3rdparty/quickjs/quickjs.c
-)
+set(CMAKE_SYSTEM_NAME Generic) # Generic for now, to not trigger a Warning
+set(CMAKE_SYSTEM_VERSION 1)
+set(CMAKE_SYSTEM_PROCESSOR wasm32)
+set(CMAKE_SYSTEM_PROCESSOR x86)
+set(CMAKE_C_COMPILER_ID Wasienv)
+
+set(CMAKE_C_COMPILER ${WASI_CC})
+set(CMAKE_CXX_COMPILER ${WASI_CXX})
+set(CMAKE_LINKER ${WASI_LD} CACHE STRING "wasienv build")
+set(CMAKE_AR ${WASI_AR} CACHE STRING "wasienv build")
+set(CMAKE_RANLIB ${WASI_RANLIB} CACHE STRING "wasienv build")
+set(CMAKE_SYSROOT ${WASI_SDK_PREFIX}/share/wasi-sysroot CACHE STRING "wasi-sdk build")
+
+# Don't look in the sysroot for executables to run during the build
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+# Only look in the sysroot (not in the host paths) for the rest
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# Some other hacks
+set(CMAKE_C_COMPILER_WORKS ON)
+set(CMAKE_CXX_COMPILER_WORKS ON)
+
+set(CMAKE_C_FLAGS "-g -fno-exceptions" CACHE STRING "wasi-sdk build")
+set(CMAKE_CXX_FLAGS "-g -std=c++17 -fno-exceptions" CACHE STRING "wasi-sdk build")
+set(CMAKE_EXE_LINKER_FLAGS "-fno-exceptions -nostartfiles -Wl,--no-entry -Wl,--import-memory -Wl,--export-dynamic")
+
+######################
+## Project Section
+######################
 
 project(wasm-quickjs-loader CXX)
 
-file(GLOB SOURCE_FILES
-    src/*.cpp
-    src/io/*.cpp
-    src/protomsg/*.pb.c
-)
+add_subdirectory(modules/3rdparty/quickjs)
+add_subdirectory(modules/3rdparty/nanopb)
+add_subdirectory(modules/3rdparty/json)
+add_subdirectory(modules/io)
+add_subdirectory(modules/js)
+add_subdirectory(modules/utils)
 
 add_executable(wasm-quickjs-loader
-    ${SOURCE_FILES}
-    ${PROTO_SRCS} ${PROTO_HDRS}
+    src/entrypoint.cpp
+    src/Scene.cpp
 )
 
-include_directories(src/3rdparty/entt/includes)
-include_directories(src/3rdparty/quickjs)
-include_directories(src/3rdparty/nanopb)
-
-target_link_libraries(wasm-quickjs-loader PUBLIC quickjs)
+target_link_libraries(wasm-quickjs-loader PUBLIC io JS utils)
