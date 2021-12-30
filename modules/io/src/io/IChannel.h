@@ -10,7 +10,7 @@ class IChannel
 {
 public:
     virtual ~IChannel(){};
-    virtual int writeMessage(const char *buffer, uint32_t bufferLength) = 0;
+    virtual int writeMessage(const char *buffer, uint32_t bufferLength, bool direct = false) = 0;
     virtual void setOnDataArrival(DataArrivalCallback f) = 0;
 };
 

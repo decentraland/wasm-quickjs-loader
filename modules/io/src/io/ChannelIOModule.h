@@ -23,6 +23,7 @@ public:
     IChannel *getChannelByKey(const std::string key) const;
 
     void poll();
+    void flush();
 
 private:
     std::map<std::string, std::unique_ptr<FDChannel>> channels;

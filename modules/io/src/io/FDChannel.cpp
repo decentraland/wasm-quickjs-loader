@@ -12,7 +12,16 @@ FDChannel::FDChannel(int fdRead, int fdWrite)
     this->fdWrite = fdWrite;
 
     pollingState.dataLength = 8192;
-    this->pollingState.data = (char *)malloc(pollingState.dataLength);            
+    this->pollingState.data = (char *)malloc(pollingState.dataLength);
+
+    outgoingData.dataOffset = 0;
+    outgoingData.dataLength = 48 * 1024;
+    outgoingData.buffer = new char[outgoingData.dataLength];
+
+    tmpbuffer = new char[8192];
+
+    pollingState.dataLength = 8192;
+    this->pollingState.data = (char *)malloc(pollingState.dataLength);
 }
 
 FDChannel::~FDChannel()
@@ -20,11 +29,39 @@ FDChannel::~FDChannel()
     free(this->pollingState.data);
 }
 
-int FDChannel::writeMessage(const char *buffer, uint32_t bufferLength)
+int FDChannel::writeMessage(const char *buffer, uint32_t bufferLength, bool direct)
 {
-    lseek(this->fdWrite, 0, SEEK_SET);
-    ::write(this->fdWrite, buffer, bufferLength);
+    if (direct)
+    {
+        memcpy(tmpbuffer, &bufferLength, 4);
+        memcpy(&tmpbuffer[4], buffer, bufferLength);
+        lseek(this->fdWrite, 0, SEEK_SET);
+        ::write(this->fdWrite, tmpbuffer, bufferLength + 4);
+    }
+    else
+    {
+        if ((bufferLength+4) > outgoingData.dataLength){
+            // Handle this exception
+            return 0;
+        }
+        
+        if (outgoingData.dataOffset + bufferLength + 4 > outgoingData.dataLength){
+            flush();
+        }
+
+        memcpy(&outgoingData.buffer[outgoingData.dataOffset], &bufferLength, 4);
+        memcpy(&outgoingData.buffer[outgoingData.dataOffset + 4], buffer, bufferLength);
+        outgoingData.dataOffset += bufferLength + 4;
+    }
     return 0;
+}
+
+void FDChannel::flush() {
+    if (outgoingData.dataOffset > 0){
+        lseek(this->fdWrite, 0, SEEK_SET);
+        ::write(this->fdWrite, outgoingData.buffer, outgoingData.dataOffset);
+        outgoingData.dataOffset = 0;
+    }
 }
 
 void FDChannel::setOnDataArrival(DataArrivalCallback f)

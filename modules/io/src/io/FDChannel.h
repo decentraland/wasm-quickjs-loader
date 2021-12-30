@@ -9,10 +9,11 @@ public:
     FDChannel(int fdRead, int fdWrite);
     ~FDChannel() override;
 
-    int writeMessage(const char *buffer, uint32_t bufferLength) override;
+    int writeMessage(const char *buffer, uint32_t bufferLength, bool direct = false) override;
     void setOnDataArrival(DataArrivalCallback f) override;
 
     void poll();
+    void flush();
 
 private:
     int fdRead = -1, fdWrite = -1;
@@ -31,6 +32,14 @@ private:
         uint32_t dataOffset = 0;
         PollingState state;
     } pollingState;
+
+    struct {
+        char* buffer;
+        uint32_t dataLength = 0;
+        uint32_t dataOffset = 0;
+    } outgoingData;
+    
+    char* tmpbuffer;
 };
 
 #endif

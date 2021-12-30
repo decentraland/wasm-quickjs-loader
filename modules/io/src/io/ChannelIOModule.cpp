@@ -22,6 +22,15 @@ void ChannelIOModule::poll()
     }
 }
 
+
+void ChannelIOModule::flush()
+{
+    for (const auto &entry : channels)
+    {
+        entry.second->flush();
+    }
+}
+
 IChannel *ChannelIOModule::getChannelByKey(std::string key) const
 {
     auto it = channels.find(key);

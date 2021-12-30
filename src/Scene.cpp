@@ -75,4 +75,6 @@ void Scene::loop(float dt)
       startedJs = true;
     // }
   }
+
+  ioModule->flush();
 }
